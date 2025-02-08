@@ -6,9 +6,15 @@ import { CursorMode, CursorState, Reaction, ReactionEvent } from '@/types/type';
 import ReactionSelector from './reaction/ReactionButton';
 import FlyingReaction from './reaction/FlyingReaction';
 import useInterval from '@/hooks/useInterval';
+import { Canvas } from 'fabric';
 
 
-export const Live = () => {
+type Props={
+  canvasRef : React.MutableRefObject<HTMLCanvasElement |  null>;
+}
+
+
+export const Live = ({canvasRef}: Props) => {
 
   const others = useOthers();
   const [{cursor}, updateMyPresence] = useMyPresence() as any;
@@ -137,6 +143,7 @@ export const Live = () => {
 
   return (
     <div
+    id="canvas"
       onPointerMove={handlePointerMove}
       onPointerLeave={handlePointerLeave}
       onPointerDown={handlePointerDown}
@@ -144,7 +151,7 @@ export const Live = () => {
 
       className='h-[100vh] w-[100vw] flex justify-center items-center text-center'
     >
-      <h1 className="font-semibold text-3xl text-white bg-slate-600 ">hello</h1>
+      <canvas ref = {canvasRef}/>
 
       {reaction.map((r)=>{
         <FlyingReaction 

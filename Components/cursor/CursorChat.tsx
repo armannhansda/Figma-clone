@@ -41,6 +41,7 @@ const CursorChat = ({cursor, cursorState, setCursorState, updateMyPresence}: Cur
             className='absolute left-2 top-5 bg-blue-500 px-4 py-2 text-sm leading-relaxed text-white' style={{
               borderRadius: 20,
             }}
+            onKeyUp={(e)=> e.stopPropagation()}
           >
             {/**
              * if there is a previous message, show it above the input
