@@ -1,4 +1,13 @@
-import fabric from "fabric";
+// Import from our adapter
+import { 
+  Canvas, 
+  TPointerEvent, 
+  FabricObject, 
+  FabricObject2, 
+  FabricCanvas,
+  FabricIEvent,
+  util 
+} from "@/lib/fabric-adapter";
 import { v4 as uuid4 } from "uuid";
 
 import {
@@ -19,14 +28,14 @@ export const initializeFabric = ({
   fabricRef,
   canvasRef,
 }: {
-  fabricRef: React.MutableRefObject<fabric.Canvas | null>;
+  fabricRef: React.MutableRefObject<any | null>;
   canvasRef: React.MutableRefObject<HTMLCanvasElement | null>;
 }) => {
   // get canvas element
   const canvasElement = document.getElementById("canvas");
 
   // create fabric canvas
-  const canvas = new fabric.Canvas(canvasRef.current, {
+  const canvas = new Canvas(canvasRef.current!, {
     width: canvasElement?.clientWidth,
     height: canvasElement?.clientHeight,
   });
@@ -54,7 +63,7 @@ export const handleCanvasMouseDown = ({
    *
    * findTarget: http://fabricjs.com/docs/fabric.Canvas.html#findTarget
    */
-  const target = canvas.findTarget(options.e, false);
+  const target = canvas.findTarget(options.e);
 
   // set canvas drawing mode to false
   canvas.isDrawingMode = false;
@@ -63,7 +72,9 @@ export const handleCanvasMouseDown = ({
   if (selectedShapeRef.current === "freeform") {
     isDrawing.current = true;
     canvas.isDrawingMode = true;
-    canvas.freeDrawingBrush.width = 5;
+    if (canvas.freeDrawingBrush) {
+      canvas.freeDrawingBrush.width = 5;
+    }
     return;
   }
 
@@ -204,7 +215,8 @@ export const handleCanvasObjectModified = ({
   options,
   syncShapeInStorage,
 }: CanvasObjectModified) => {
-  const target = options.target;
+  // Using 'as any' to bypass strict typing issues with fabric events
+  const target = (options as any).target;
   if (!target) return;
 
   if (target?.type == "activeSelection") {
@@ -236,35 +248,35 @@ export const handlePathCreated = ({
 export const handleCanvasObjectMoving = ({
   options,
 }: {
-  options: fabric.IEvent;
+  options: any; // Using any to handle fabric event types
 }) => {
   // get target object which is moving
-  const target = options.target as fabric.Object;
+  const target = options.target as FabricObject2;
 
   // target.canvas is the canvas on which the object is moving
-  const canvas = target.canvas as fabric.Canvas;
+  const canvas = target.canvas as FabricCanvas;
 
   // set coordinates of target object
   target.setCoords();
 
   // restrict object to canvas boundaries (horizontal)
-  if (target && target.left) {
+  if (target && typeof target.left === 'number') {
     target.left = Math.max(
       0,
       Math.min(
         target.left,
-        (canvas.width || 0) - (target.getScaledWidth() || target.width || 0)
+        (canvas.width || 0) - ((target.getScaledWidth && target.getScaledWidth()) || target.width || 0)
       )
     );
   }
 
   // restrict object to canvas boundaries (vertical)
-  if (target && target.top) {
+  if (target && typeof target.top === 'number') {
     target.top = Math.max(
       0,
       Math.min(
         target.top,
-        (canvas.height || 0) - (target.getScaledHeight() || target.height || 0)
+        (canvas.height || 0) - ((target.getScaledHeight && target.getScaledHeight()) || target.height || 0)
       )
     );
   }
@@ -279,14 +291,17 @@ export const handleCanvasSelectionCreated = ({
   // if user is editing manually, return
   if (isEditingRef.current) return;
 
+  // Cast options to access the selected property
+  const optionsWithSelected = options as unknown as { selected?: FabricObject2[] };
+
   // if no element is selected, return
-  if (!options?.selected) return;
+  if (!optionsWithSelected?.selected) return;
 
   // get the selected element
-  const selectedElement = options?.selected[0] as fabric.Object;
+  const selectedElement = optionsWithSelected?.selected[0];
 
   // if only one element is selected, set element attributes
-  if (selectedElement && options.selected.length === 1) {
+  if (selectedElement && optionsWithSelected.selected.length === 1) {
     // calculate scaled dimensions of the object
     const scaledWidth = selectedElement?.scaleX
       ? selectedElement?.width! * selectedElement?.scaleX
@@ -300,13 +315,10 @@ export const handleCanvasSelectionCreated = ({
       width: scaledWidth?.toFixed(0).toString() || "",
       height: scaledHeight?.toFixed(0).toString() || "",
       fill: selectedElement?.fill?.toString() || "",
-      stroke: selectedElement?.stroke || "",
-      // @ts-ignore
-      fontSize: selectedElement?.fontSize || "",
-      // @ts-ignore
-      fontFamily: selectedElement?.fontFamily || "",
-      // @ts-ignore
-      fontWeight: selectedElement?.fontWeight || "",
+      stroke: selectedElement?.stroke?.toString() || "",
+      fontSize: (selectedElement as any)?.fontSize?.toString() || "",
+      fontFamily: (selectedElement as any)?.fontFamily || "",
+      fontWeight: (selectedElement as any)?.fontWeight || "",
     });
   }
 };
@@ -316,7 +328,7 @@ export const handleCanvasObjectScaling = ({
   options,
   setElementAttributes,
 }: CanvasObjectScaling) => {
-  const selectedElement = options.target;
+  const selectedElement = (options as any).target as FabricObject2;
 
   // calculate scaled dimensions of the object
   const scaledWidth = selectedElement?.scaleX
@@ -354,35 +366,25 @@ export const renderCanvas = ({
      *
      * enlivenObjects: http://fabricjs.com/docs/fabric.util.html#.enlivenObjectEnlivables
      */
-    fabric.util.enlivenObjects(
-      [objectData],
-      (enlivenedObjects: fabric.Object[]) => {
-        enlivenedObjects.forEach((enlivenedObj) => {
-          // if element is active, keep it in active state so that it can be edited further
-          if (activeObjectRef.current?.objectId === objectId) {
-            fabricRef.current?.setActiveObject(enlivenedObj);
-          }
+    // Use 'as any' to bypass strict typing for enlivenObjects
+    (util.enlivenObjects as any)([objectData], function(enlivenedObjects: FabricObject2[]) {
+      enlivenedObjects.forEach((enlivenedObj: FabricObject2) => {
+        // if element is active, keep it in active state so that it can be edited further
+        if (activeObjectRef.current?.objectId === objectId) {
+          fabricRef.current?.setActiveObject(enlivenedObj);
+        }
 
-          // add object to canvas
-          fabricRef.current?.add(enlivenedObj);
-        });
-      },
-      /**
-       * specify namespace of the object for fabric to render it on canvas
-       * A namespace is a string that is used to identify the type of
-       * object.
-       *
-       * Fabric Namespace: http://fabricjs.com/docs/fabric.html
-       */
-      "fabric"
-    );
+        // add object to canvas
+        fabricRef.current?.add(enlivenedObj);
+      });
+    });
   });
 
   fabricRef.current?.renderAll();
 };
 
 // resize canvas dimensions on window resize
-export const handleResize = ({ canvas }: { canvas: fabric.Canvas | null }) => {
+export const handleResize = ({ canvas }: { canvas: FabricCanvas | null }) => {
   const canvasElement = document.getElementById("canvas");
   if (!canvasElement) return;
 
@@ -399,8 +401,8 @@ export const handleCanvasZoom = ({
   options,
   canvas,
 }: {
-  options: fabric.IEvent & { e: WheelEvent };
-  canvas: fabric.Canvas;
+  options: FabricIEvent & { e: WheelEvent };
+  canvas: FabricCanvas;
 }) => {
   const delta = options.e?.deltaY;
   let zoom = canvas.getZoom();
@@ -415,7 +417,8 @@ export const handleCanvasZoom = ({
 
   // set zoom to canvas
   // zoomToPoint: http://fabricjs.com/docs/fabric.Canvas.html#zoomToPoint
-  canvas.zoomToPoint({ x: options.e.offsetX, y: options.e.offsetY }, zoom);
+  // Create a simple point object - fabric will handle the conversion
+  canvas.zoomToPoint({ x: options.e.offsetX, y: options.e.offsetY } as any, zoom);
 
   options.e.preventDefault();
   options.e.stopPropagation();

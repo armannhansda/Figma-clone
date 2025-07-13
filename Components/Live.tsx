@@ -92,11 +92,11 @@ export const Live = ({canvasRef}: Props) => {
 
     updateMyPresence({cursor: {x,y}});
 
-    setCursorState((state: cursorState)=> cursorState.mode === CursorMode.Reaction? {...state, isPressed: true} : state);
+    setCursorState((state: CursorState) => cursorState.mode === CursorMode.Reaction ? { ...state, isPressed: true } : state);
   }, []);
 
   const handlePointerUp = useCallback((event : React.PointerEvent) => {
-    setCursorState((state:cursorState) => cursorState.mode === CursorMode.Reaction ? {...state, isPrssed: true}: state)
+    setCursorState((state: CursorState) => cursorState.mode === CursorMode.Reaction ? {...state, isPressed: true} : state)
   },[cursorState.mode, setCursorState])
 
   useEffect(()=>{
@@ -151,36 +151,34 @@ export const Live = ({canvasRef}: Props) => {
 
       className='h-[100vh] w-[100vw] flex justify-center items-center text-center'
     >
-      <canvas ref = {canvasRef}/>
+      <canvas ref={canvasRef} id="canvas" />
 
-      {reaction.map((r)=>{
+      {reaction.map((r) => (
         <FlyingReaction 
-            key = {r.timestamp.toString()}
-            x = {r.point.x}
-            y= {r.point.x}
+            key={r.timestamp.toString()}
+            x={r.point.x}
+            y={r.point.y}
             timestamp={r.timestamp}
             value={r.value}
         />
-      })}
+      ))}
 
       {cursor && (
         <CursorChat 
-          cursor = {cursor}
-          cursorState = {cursorState}
-          setCursorState = {setCursorState}
-          updateMyPresence = {updateMyPresence} 
+          cursor={cursor}
+          cursorState={cursorState}
+          setCursorState={setCursorState}
+          updateMyPresence={updateMyPresence} 
         />
       )}
 
       {cursorState.mode === CursorMode.ReactionSelector && (
         <ReactionSelector 
-          setReaction={(reaction)=>{
-            setReaction(reaction);
-          }}  
+          setReaction={setReactions}
         />
       )}
 
-      <LiveCursors others = {others}/>
+      <LiveCursors others={others}/>
     </div>
   )
 }

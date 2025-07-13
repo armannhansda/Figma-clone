@@ -1,39 +1,39 @@
-import  fabric  from "fabric";
+// Import fabric module properly for Next.js
+import { Rect, Triangle, Circle, Line, IText, Image, CustomFabricObject } from "@/lib/fabric-adapter";
 import { v4 as uuidv4 } from "uuid";
 
 import {
-  CustomFabricObject,
   ElementDirection,
   ImageUpload,
   ModifyShape,
 } from "@/types/type";
 
 export const createRectangle = (pointer: PointerEvent) => {
-  const rect = new fabric.Rect({
+  const rect = new Rect({
     left: pointer.x,
     top: pointer.y,
     width: 100,
     height: 100,
     fill: "#aabbcc",
     objectId: uuidv4(),
-  } as CustomFabricObject<fabric.Rect>);
+  } as CustomFabricObject<typeof Rect>);
 
   return rect;
 };
 
 export const createTriangle = (pointer: PointerEvent) => {
-  return new fabric.Triangle({
+  return new Triangle({
     left: pointer.x,
     top: pointer.y,
     width: 100,
     height: 100,
     fill: "#aabbcc",
     objectId: uuidv4(),
-  } as CustomFabricObject<fabric.Triangle>);
+  } as CustomFabricObject<typeof Triangle>);
 };
 
 export const createCircle = (pointer: PointerEvent) => {
-  return new fabric.Circle({
+  return new Circle({
     left: pointer.x,
     top: pointer.y,
     radius: 100,
@@ -43,18 +43,18 @@ export const createCircle = (pointer: PointerEvent) => {
 };
 
 export const createLine = (pointer: PointerEvent) => {
-  return new fabric.Line(
+  return new Line(
     [pointer.x, pointer.y, pointer.x + 100, pointer.y + 100],
     {
       stroke: "#aabbcc",
       strokeWidth: 2,
       objectId: uuidv4(),
-    } as CustomFabricObject<fabric.Line>
+    } as any
   );
 };
 
 export const createText = (pointer: PointerEvent, text: string) => {
-  return new fabric.IText(text, {
+  return new IText(text, {
     left: pointer.x,
     top: pointer.y,
     fill: "#aabbcc",
@@ -62,7 +62,7 @@ export const createText = (pointer: PointerEvent, text: string) => {
     fontSize: 36,
     fontWeight: "400",
     objectId: uuidv4()
-  } as fabric.ITextOptions);
+  } as any);
 };
 
 export const createSpecificShape = (
@@ -99,7 +99,8 @@ export const handleImageUpload = ({
   const reader = new FileReader();
 
   reader.onload = () => {
-    fabric.Image.fromURL(reader.result as string, (img) => {
+    // In Fabric.js v6+, fromURL returns a promise
+    Image.fromURL(reader.result as string).then((img) => {
       img.scaleToWidth(200);
       img.scaleToHeight(200);
 
@@ -119,7 +120,7 @@ export const handleImageUpload = ({
 };
 
 export const createShape = (
-  canvas: fabric.Canvas,
+  canvas: any, // Using any since we're importing Canvas separately
   pointer: PointerEvent,
   shapeType: string
 ) => {
@@ -174,9 +175,9 @@ export const bringElement = ({
 
   // bring the selected element to the front
   if (direction === "front") {
-    canvas.bringToFront(selectedElement);
+    (canvas as any).bringToFront(selectedElement);
   } else if (direction === "back") {
-    canvas.sendToBack(selectedElement);
+    (canvas as any).sendToBack(selectedElement);
   }
 
   // canvas.renderAll();
